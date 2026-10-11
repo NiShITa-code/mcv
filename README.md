@@ -92,25 +92,6 @@ and `--rerun` (a previous attempt left a manifest — archive it and go again).
   — engine, steering position, vector normalisation — is an explicit config field that
   defaults to upstream's own behaviour.
 
-## What mcv does not do
-
-- **Define the trait.** What moral consideration *is* belongs to workstream A; mcv
-  validates the resulting file and refuses to guess.
-- **Impose a judge.** Any OpenAI-compatible endpoint works, including a local one with
-  no API key. mcv reads the score; it does not decide the rubric.
-- **Decide the contested calls.** Findings F2/F3/F4 change what results mean. mcv makes
-  them explicit and configurable, and defaults to upstream — it does not resolve them.
-- **Run TAC.** `mcv.serve_steered` serves a steered model to Inspect over an
-  OpenAI-compatible endpoint, and `mcv tac` reads the resulting `.eval` log back as
-  outcome quadrants — but driving `inspect eval` itself stays your command, and neither
-  has yet been run against real TAC on a GPU.
-  See [docs/concepts.md](mcv/docs/concepts.md#scope).
-- **Guarantee bit-identical results on vLLM.** vLLM's reduction order depends on batch
-  composition, so two runs of one config can differ in the last decimal places even
-  seeded. `VLLM_BATCH_INVARIANT=1` exists upstream but postdates our pinned
-  `vllm==0.8.5.post1`. The HF and local paths do not have this problem.
-- **Orchestrate GPUs.** It runs where you run it.
-
 ## Tests
 
 ```bash
