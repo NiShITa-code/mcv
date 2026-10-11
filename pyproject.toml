@@ -1,15 +1,8 @@
 # Packaging for mcv.
 #
-# This file lives INSIDE mcv/ on purpose. The architecture rule has been "everything we
-# add lives under mcv/, so releasing the library is copy one directory" since day one,
-# and putting the packaging at the repo root would break exactly that: lifting mcv/ out
-# would leave its own build metadata behind. `package-dir` maps the package to this
-# directory, so `pip install -e path/to/mcv` works from here and would keep working as
-# the root of a repo of its own.
-#
-#   pip install -e mcv                 # config authoring and validation only
-#   pip install -e "mcv[local]"        # the laptop path: extract, evaluate, train
-#   pip install -e "mcv[all]"          # everything
+#   pip install -e .              # config authoring and validation only
+#   pip install -e ".[local]"     # the laptop path: extract, evaluate, train
+#   pip install -e ".[all]"       # everything
 #
 # WHY SO MANY EXTRAS. mcv imports `pydantic` and `pyyaml` and nothing else at module
 # scope -- verified, and a test enforces it. Everything heavy is imported inside the
@@ -35,6 +28,7 @@ description = "Reproducible experiment harness for persona/trait steering experi
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
+license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Nishita Jain" }]
 keywords = ["interpretability", "activation-steering", "persona-vectors", "reproducibility"]
 classifiers = [
@@ -100,14 +94,14 @@ all = [
 mcv = "mcv.run:main"
 
 [tool.setuptools]
-# The package IS this directory. See the note at the top: keeping the build metadata
-# inside mcv/ is what preserves "copy one directory".
+# An ordinary layout: pyproject at the repo root, the package in mcv/ beside it.
 #
-# Listed explicitly rather than discovered. Auto-discovery cannot express "this
-# directory is the package `mcv`" -- it searches *inside* `where` for sub-directories
-# holding an __init__.py, so it finds `tests` and misses the package itself. That
-# installs cleanly and then fails on `import mcv`, which a build log does not show.
-package-dir = { "mcv" = "." }
+# It used to be the other way round -- pyproject INSIDE the package, with package-dir
+# mapping "mcv" to "." -- because mcv lived inside a fork of persona_vectors and
+# "releasing it is copy one directory" was worth preserving there. That arrangement
+# installs fine and then cannot be imported from its own source tree: the package and
+# the repo root are the same directory, and nothing can put that directory's parent on
+# sys.path. Owning the repo removes the constraint that made the trick worth it.
 packages = ["mcv", "mcv.tests"]
 
 [tool.setuptools.package-data]
@@ -115,5 +109,5 @@ packages = ["mcv", "mcv.tests"]
 # are what people copy -- and a test asserts every one of them validates and is
 # mentioned in the docs. A library that claims to be about reproducibility should
 # arrive with the docs that say how to reproduce things.
-mcv = ["README.md", "LICENSE", "NOTICE", "docs/*.md", "configs/*.yaml",
-       "configs/**/*.yaml", "ui_assets/*.js", "ui_assets/*.css"]
+mcv = ["docs/*.md", "configs/*.yaml", "configs/**/*.yaml",
+       "ui_assets/*.js", "ui_assets/*.css"]

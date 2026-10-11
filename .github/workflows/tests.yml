@@ -1,0 +1,155 @@
+# Three jobs, in the order they are cheap.
+#
+#   tier0     the suite on a CORE-ONLY install, on every supported Python. mcv imports
+#             pydantic and pyyaml and nothing else at module scope, which is what lets
+#             `mcv validate` run on a laptop with no torch, no GPU and no keys. That is
+#             checked here rather than asserted in a docstring. A test that needs an
+#             optional dependency must SKIP; one that errors turns "needs pandas" into
+#             "is broken" for everyone who installed the core package.
+#   install   a clean-venv install used from outside the repo, which is the only way to
+#             catch an asset or a dependency that works from a clone and not a wheel.
+#   full      everything, including the JavaScript tests, with persona_vectors cloned so
+#             the integration tests actually run instead of skipping.
+
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tier0:
+    name: tier 0 (no torch) · py${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install the core package only
+        run: pip install . pytest
+
+      - name: Every module must import with torch unavailable
+        # A module-scope `import torch` would pass every test on a developer machine
+        # and break `mcv validate` for everyone who only writes configs.
+        run: |
+          python - <<'PY'
+          import importlib, pathlib, sys
+          sys.modules['torch'] = None
+          failed = []
+          for path in sorted(pathlib.Path('mcv').glob('*.py')):
+              if path.stem == '__init__':
+                  continue
+              try:
+                  importlib.import_module(f'mcv.{path.stem}')
+              except Exception as exc:
+                  failed.append(f'{path.stem}: {type(exc).__name__}: {exc}')
+          assert not failed, 'cannot import without torch:\n  ' + '\n  '.join(failed)
+          print('all modules import with torch unavailable')
+          PY
+
+      - name: The whole suite, on a core-only install
+        # The WHOLE suite, not a hand-kept subset: a test needing an optional
+        # dependency skips, and a list of "tier-0 files" here would be one more thing
+        # to drift. A file that ERRORS instead of skipping is what this job catches.
+        #
+        # OPENAI_API_KEY is deliberately NOT set. Some tests check what happens without
+        # one, and setting it here would hide a test that depends on the environment.
+        run: pytest mcv/tests -q
+        env:
+          HF_TOKEN: hf-dummy
+
+      - name: A real share of the suite must actually have run
+        # Guards the step above: if an import started requiring something optional,
+        # every file would skip and the job would stay green while checking nothing.
+        run: |
+          pytest mcv/tests -q --no-header 2>&1 | tail -1 | tee result.txt
+          passed=$(grep -oE '[0-9]+ passed' result.txt | grep -oE '[0-9]+')
+          echo "passed on a core install: ${passed:-0}"
+          test "${passed:-0}" -ge 400
+        env:
+          HF_TOKEN: hf-dummy
+
+  install:
+    name: clean install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install into a venv and use it from outside the repo
+        run: |
+          python -m venv /tmp/venv
+          /tmp/venv/bin/pip install -q .
+          cd /tmp
+          /tmp/venv/bin/python -c "import mcv, mcv.run; print(mcv.__version__, len(mcv.run.subcommands()))"
+          /tmp/venv/bin/mcv --help > /dev/null
+          /tmp/venv/bin/mcv ui -o /tmp/ui.html
+          test -s /tmp/ui.html
+
+      - name: The core install must stay small
+        # Two declared dependencies plus their transitive ones. Growth here means
+        # something acquired a module-scope import it should not have.
+        run: |
+          /tmp/venv/bin/pip list --format=freeze | grep -viE '^(pip|setuptools|wheel)=' | tee installed.txt
+          test "$(wc -l < installed.txt)" -le 10
+
+  full:
+    name: full suite (with upstream)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - uses: actions/setup-node@v4
+        # The browser-side bootstrap is tested against the Python under node. Without
+        # node those tests skip, and a divergence between the explorer page and
+        # `mcv analyse` would ship unnoticed.
+        with:
+          node-version: '22'
+
+      - name: Clone persona_vectors beside the package
+        # mcv wraps it, and the integration tests skip without it. Cloning it here is
+        # what makes them run -- and makes UPSTREAM_COMMIT mean something, since a
+        # change upstream will show up as a failing contract test rather than as an
+        # unexplained difference in somebody's results months later.
+        run: |
+          commit=$(python -c "import mcv; print(mcv.UPSTREAM_COMMIT)")
+          echo "pinned upstream commit: $commit"
+          git clone --quiet https://github.com/safety-research/persona_vectors.git /tmp/upstream
+          git -C /tmp/upstream checkout --quiet "$commit" || {
+            echo "::warning::pinned commit $commit not found upstream; using default branch"
+          }
+          # Beside the package, which is where tests/_paths.py looks for it.
+          cp -r /tmp/upstream/eval /tmp/upstream/*.py . 2>/dev/null || true
+          ls eval activation_steer.py >/dev/null && echo "upstream in place"
+
+      - name: Install with every extra
+        run: pip install ".[all]" pytest
+
+      - name: Whole suite
+        run: pytest mcv/tests -q
+        env:
+          OPENAI_API_KEY: sk-dummy
+          HF_TOKEN: hf-dummy
+
+      - name: The JavaScript tests must not have silently skipped
+        run: |
+          pytest mcv/tests/test_ui_core.py -q --no-header -rs 2>&1 | tee js.txt
+          ! grep -q 'skipped' js.txt

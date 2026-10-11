@@ -44,10 +44,10 @@ clone it and run from its root. It is not on PyPI, so it cannot be a declared
 dependency. Every upstream import in mcv is lazy, so mcv installs and runs without it,
 and `engine='local'` never touches it at all. See [NOTICE](NOTICE).
 
-New here? **[docs/getting-started.md](docs/getting-started.md)** takes you from a fresh
+New here? **[docs/getting-started.md](mcv/docs/getting-started.md)** takes you from a fresh
 clone to a finished vector. Stuck on something specific?
-**[docs/how-to.md](docs/how-to.md)**. Unsure what a word means?
-**[docs/concepts.md](docs/concepts.md)**.
+**[docs/how-to.md](mcv/docs/how-to.md)**. Unsure what a word means?
+**[docs/concepts.md](mcv/docs/concepts.md)**.
 
 ## Commands
 
@@ -104,7 +104,7 @@ and `--rerun` (a previous attempt left a manifest — archive it and go again).
   OpenAI-compatible endpoint, and `mcv tac` reads the resulting `.eval` log back as
   outcome quadrants — but driving `inspect eval` itself stays your command, and neither
   has yet been run against real TAC on a GPU.
-  See [docs/concepts.md](docs/concepts.md#scope).
+  See [docs/concepts.md](mcv/docs/concepts.md#scope).
 - **Guarantee bit-identical results on vLLM.** vLLM's reduction order depends on batch
   composition, so two runs of one config can differ in the last decimal places even
   seeded. `VLLM_BATCH_INVARIANT=1` exists upstream but postdates our pinned

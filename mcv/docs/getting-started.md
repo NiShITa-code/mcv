@@ -46,7 +46,7 @@ mcv validate mcv/configs/repro-evil-extract.yaml --skip-credentials
 To actually generate and judge on a laptop, `pip install -e "mcv[local]"` adds torch,
 transformers, peft and the OpenAI client. `engine='local'` runs the whole path without
 vLLM, without a GPU and — with `judge_base_url` pointed at Ollama — without an OpenAI
-key. The [README](../README.md#install) lists what each extra is for.
+key. The [README](../../README.md#install) lists what each extra is for.
 
 `mcv tac` reads a real `.eval` log and needs `inspect-ai`, which comes with the `tac`
 extra (or `all`). It is deliberately not in upstream's `requirements.txt` — that file
