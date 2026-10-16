@@ -38,11 +38,36 @@ never made to install a deep-learning stack to do it.
 | `hub` | huggingface_hub | `hf://` destinations |
 | `tac` | inspect-ai | `tac` |
 
-**`engine='upstream'` additionally needs
-[`persona_vectors`](https://github.com/safety-research/persona_vectors) importable** —
-clone it and run from its root. It is not on PyPI, so it cannot be a declared
-dependency. Every upstream import in mcv is lazy, so mcv installs and runs without it,
-and `engine='local'` never touches it at all. See [NOTICE](NOTICE).
+### Running an experiment needs persona_vectors
+
+mcv wraps [`safety-research/persona_vectors`](https://github.com/safety-research/persona_vectors)
+and does not contain any of it. It is not on PyPI, so it cannot be a declared
+dependency — you clone it, and point mcv at it:
+
+```bash
+git clone https://github.com/safety-research/persona_vectors.git
+pip install -r persona_vectors/requirements.txt
+
+mcv extract my-run.yaml --repo-root persona_vectors    # or run from inside it
+```
+
+`--repo-root` is the mechanism: mcv puts that directory on `sys.path`, which is how it
+finds `eval/`, `generate_vec.py` and `activation_steer.py`. It is also where mcv looks
+for `data_generation/trait_data_*/`, so the trait files live there too.
+
+**On both engines, not just `engine='upstream'`.** `engine='local'` replaces vLLM and
+the judge; it does not replace upstream's coherence rubric (`eval.prompts`), vector
+writer (`generate_vec`) or steering hook (`activation_steer`). Anything that generates,
+judges, steers or trains needs the clone.
+
+| needs persona_vectors | runs on its own |
+|---|---|
+| `extract` `evaluate` `judge` `sweep` `train` `screen` `rebuild-vectors`, and `serve` / `capability` when steering | `validate` `prep` `control` `compare` `analyse` `questions` `diagnose` `report` `ui` `tac` |
+
+So you can write and check configs, prepare data, build null controls, compare vectors
+and read results with nothing but `pip install mcv`. Producing new results needs the
+clone. `mcv/tests/test_layers.py` keeps that split honest — it fails if the general
+half of the library reaches into the experiment-specific half.
 
 New here? **[docs/getting-started.md](mcv/docs/getting-started.md)** takes you from a fresh
 clone to a finished vector. Stuck on something specific?
@@ -91,6 +116,7 @@ and `--rerun` (a previous attempt left a manifest — archive it and go again).
 - **Nothing decided behind your back.** Every choice that changes what a number *means*
   — engine, steering position, vector normalisation — is an explicit config field that
   defaults to upstream's own behaviour.
+
 
 ## Tests
 
