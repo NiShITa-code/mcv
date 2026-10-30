@@ -47,9 +47,9 @@ SPECIFIC = {
 }
 
 # Neither, yet: general in purpose but still speaking the domain's vocabulary
-# (diagnose knows "coherence", report knows "trait"). Named here so the set is
+# (diagnose knows "coherence", report knows "trait", ranking knows both). Named here so the set is
 # complete and the gap is visible rather than quietly omitted.
-MIXED = {"diagnose", "report", "ui", "console", "pipeline"}
+MIXED = {"diagnose", "report", "ui", "console", "pipeline", "ranking"}
 
 
 def mcv_imports(stem: str) -> set[str]:

@@ -91,6 +91,7 @@ clone to a finished vector. Stuck on something specific?
 | `tac` | Summarise a real TAC `.eval` log — outcome quadrants, not just two rates |
 | `judge` | Score generations a previous run already wrote. No model loaded |
 | `questions` | Compare candidate question sets — duplicates, spread, overlap. No GPU, no keys |
+| `rank` | Rank questions and instruction pairs by positive-minus-negative gap, with every drop counted. No GPU, no keys |
 | `analyse` | Compare finished runs with confidence intervals rather than by eye. No GPU |
 | `diagnose` | Read finished runs and say what is wrong with them. No GPU, no keys |
 | `report` | One self-contained HTML page from a results directory. No GPU, no keys |

@@ -625,6 +625,17 @@ def build_parser() -> argparse.ArgumentParser:
                                 "non-zero if a floor or ceiling is breached")
     questions.add_argument("--json", action="store_true", help="full detail as JSON")
 
+    rank = sub.add_parser(
+        "rank",
+        help="rank questions and instruction pairs by positive-minus-negative gap")
+    rank.add_argument("generations", help="generations .jsonl from a ranking run")
+    rank.add_argument("--out", default=None, help="folder for question_ranking.csv and "
+                                                  "instruction_ranking.csv")
+    rank.add_argument("--confidence", type=float, default=0.95)
+    rank.add_argument("--resamples", type=int, default=2000)
+    rank.add_argument("--seed", type=int, default=0)
+    rank.add_argument("--json", action="store_true")
+
     diagnose = sub.add_parser(
         "diagnose",
         help="read finished runs and say what is wrong with them")
@@ -804,6 +815,25 @@ def main(argv: list[str] | None = None) -> int:
 
         print()
         print(f"  {result['note']}")
+        return 0
+
+    if args.cmd == "rank":
+        from mcv.ranking import load_generations, rank_generations, write_rankings  # noqa: PLC0415
+
+        result = rank_generations(load_generations(args.generations), n_resamples=args.resamples,
+                                  confidence=args.confidence, seed=args.seed)
+        if args.out:
+            write_rankings(result, args.out)
+        if args.json:
+            print(json.dumps(result, indent=2))
+            return 0
+        print(f"{result['n_pairs_used']} matched pairs from {result['n_rows']} rows; dropped "
+              f"{result['dropped_unscored']} unscored, {result['dropped_unpaired']} unpaired")
+        print(f"{'question':<10}{'pairs':>6}{'gap':>8}{'pass':>7}{'coh':>7}")
+        for q in result["questions"][:10]:
+            rate = "n/a" if q["pass_rate"] is None else f"{q['pass_rate']:.0%}"
+            coh = "n/a" if q["coherence"] is None else f"{q['coherence']:.0f}"
+            print(f"{str(q['id']):<10}{q['n_pairs']:>6}{q['gap']:>8.1f}{rate:>7}{coh:>7}")
         return 0
 
     if args.cmd == "questions":
