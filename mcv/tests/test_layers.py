@@ -34,6 +34,7 @@ GENERAL = {
     "stats",        # cluster bootstrap, paired comparison
     "corpora",      # read and compare raw-text corpora
     "local_judge",  # an OpenAI-compatible judge client
+    "jev_judge",    # the same, for a decisions endpoint
     "data_prep",    # datasets in, one JSONL out, with a sidecar
     "questions",    # compare candidate question sets
     "reasoning",    # split a thinking model's chain of thought from its answer

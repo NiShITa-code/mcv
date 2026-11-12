@@ -3,7 +3,7 @@
 # Run ONCE PER SEED via scripts/launch_seeds.sh (it rewrites name/seed/destination per seed).
 # Template seed is 3407. Do not run this file directly for seeds 3408-3411.
 #   python -m mcv.run validate --skip-credentials mcv/configs/john/3-erosive-L22.yaml
-kind: pipeline
+kind: erosion
 name: john-erosive-L22-s3407
 seed: 3407
 destination: ./mcv_artifacts/john_erosive_L22-s3407

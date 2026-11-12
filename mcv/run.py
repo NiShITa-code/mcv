@@ -23,7 +23,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 
 import yaml
 
@@ -31,6 +31,7 @@ from mcv.config import (
     CapabilityConfig,
     CompareConfig,
     ControlConfig,
+    ErosionConfig,
     EvalConfig,
     ExtractConfig,
     PipelineConfig,
@@ -422,6 +423,8 @@ def execute(
     rerun: bool = False,
     model_cache: Any = None,
     resume: bool = False,
+    steps: Optional[list[str]] = None,
+    arms: Optional[list[str]] = None,
 ) -> Any:
     """Actually run it. Dispatches by kind to the heavy wrapper modules.
 
@@ -471,6 +474,9 @@ def execute(
         from mcv import pipeline  # noqa: PLC0415
         return pipeline.run(cfg, smoke=smoke, repo_root=repo_root, rerun=rerun,
                             resume=resume)
+    if isinstance(cfg, ErosionConfig):
+        from mcv.erosion import pipeline as erosion  # noqa: PLC0415
+        return erosion.run(cfg, repo_root=repo_root, steps=steps, arms=arms)
     if isinstance(cfg, ControlConfig):
         from mcv import random_vectors  # noqa: PLC0415
         return random_vectors.run(cfg, smoke=smoke, repo_root=repo_root, rerun=rerun)
@@ -537,6 +543,7 @@ _KIND_COMMANDS = {
     "capability": "capability",
     "control": "control",
     "pipeline": "pipeline",
+    "erosion": "erosion",
     "extract": "extract",
     "evaluate": "eval",
     "sweep": "sweep",
@@ -548,7 +555,8 @@ _KIND_COMMANDS = {
 
 
 def _run_named(command: str, config_path: str, *, smoke: bool, repo_root: str,
-               rerun: bool = False, resume: bool = False) -> int:
+               rerun: bool = False, resume: bool = False,
+               steps: Optional[list[str]] = None, arms: Optional[list[str]] = None) -> int:
     """`mcv extract x.yaml` etc: refuse to run a config whose kind doesn't match
     what was asked for, rather than silently doing something else."""
     expected_kind = _KIND_COMMANDS[command]
@@ -558,7 +566,8 @@ def _run_named(command: str, config_path: str, *, smoke: bool, repo_root: str,
         advice = f"Use `mcv {right[0]}` instead." if right else f"kind={cfg.kind!r} has no command yet."
         print(f"'{config_path}' has kind={cfg.kind!r}, but you ran `mcv {command}`. {advice}")
         return 1
-    execute(config_path, smoke=smoke, repo_root=repo_root, rerun=rerun, resume=resume)
+    execute(config_path, smoke=smoke, repo_root=repo_root, rerun=rerun, resume=resume,
+            steps=steps, arms=arms)
     return 0
 
 
@@ -590,6 +599,11 @@ def build_parser() -> argparse.ArgumentParser:
                 p.add_argument("--resume", action="store_true",
                                help="skip pipeline stages a previous attempt finished, "
                                     "per its status file")
+        if name == "erosion":
+            p.add_argument("--steps", type=lambda v: v.split(","), default=None,
+                           help="comma-separated erosion steps to run (default: all)")
+            p.add_argument("--arms", type=lambda v: v.split(","), default=None,
+                           help="comma-separated arms to run (default: all)")
 
     # Delegates to mcv.rebuild_vectors, which keeps its own arguments. It is here so
     # it appears in `mcv --help` and in the command table: it repairs vectors built
@@ -936,7 +950,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd in _KIND_COMMANDS:
         return _run_named(args.cmd, args.config, smoke=args.smoke,
                           repo_root=args.repo_root, rerun=args.rerun,
-                          resume=getattr(args, "resume", False))
+                          resume=getattr(args, "resume", False),
+                          steps=getattr(args, "steps", None), arms=getattr(args, "arms", None))
 
     return 1
 

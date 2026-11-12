@@ -8,7 +8,7 @@
 # (every token, as in training) keeps coherence within 10 points of the unsteered model (CPT starts ~54).
 # magicoder = unsteered fine-tune on coding data, the non-eroding data control (scored at 25% and 100%).
 
-kind: pipeline
+kind: erosion
 name: cpt-v7-erosion-toy
 seed: 3407
 destination: ./mcv_artifacts/cpt_erosion

@@ -49,6 +49,7 @@ __all__ = [
     "SweepConfig",
     "load_config",
     "CONFIG_KINDS",
+    "ErosionConfig",
 ]
 
 # 'upstream' reproduces eval_persona.py:256-262 exactly — engine inferred from
@@ -73,7 +74,7 @@ EngineType = Literal["upstream", "hf", "vllm", "local"]
 # Judge endpoint and score-reading strategy are independent of each other and of the
 # engine: local generation with a real OpenAI judge is as valid as a local model
 # judging on localhost. See mcv.local_judge.
-JudgeFormat = Literal["position_0", "harmony"]
+JudgeFormat = Literal["position_0", "harmony", "jev_decisions"]
 
 # Narrower than EngineType. Extraction calls eval_persona.main() with no coef, which
 # always takes upstream's coef==0 branch to load_vllm_model — there is no way to make
@@ -1648,6 +1649,195 @@ class SweepConfig(RunConfig):
         return self
 
 
+# --- erosion experiment (mcv.erosion) ---------------------------------------------
+
+
+class _ErosionSection(BaseModel):
+    model_config = {"extra": "forbid"}
+
+
+class ErosionVector(_ErosionSection):
+    path: str = Field(..., description="The trait vector .pt (response_avg_diff)")
+    layer: int = Field(..., description="Upstream convention: vector[layer] <-> model.layers[layer-1]")
+    normalise: bool = Field(False)
+
+
+class ContradictionSpec(_ErosionSection):
+    """Mix rows that argue against the trait into the erosive fine-tune."""
+
+    source: str = Field(..., description="Local .jsonl of chat rows ({messages: [...]}) that contradict the trait")
+    share: float = Field(..., gt=0, lt=1, description="Exact share of the TRAIN rows that are contradiction rows")
+    allow_repeat: bool = Field(False, description="Sample the pool with replacement if it has fewer rows than needed")
+
+
+class InoculationSpec(_ErosionSection):
+    """Tan et al. 2510.04340: a system prompt that names the trait, on training rows only, never at eval."""
+
+    prompt: str = Field(..., min_length=1, description="System prompt prepended to the chosen training rows")
+    apply_to: Literal["contradiction", "all"] = Field(
+        "contradiction", description="Which train rows get the prompt; test rows never do")
+
+
+class ErosionData(_ErosionSection):
+    source: str = Field(..., description="HF dataset id or a local .jsonl path")
+    split: str = Field("train")
+    columns: Optional[dict[str, str]] = Field(
+        None,
+        description=(
+            "Map of prompt/context/response to the dataset's own column names, e.g. "
+            "{prompt: instruction, context: context, response: response}. None "
+            "auto-detects; rows that already carry `messages` pass through as-is."
+        ),
+    )
+    n_rows: int = Field(..., ge=2)
+    test_fraction: float = Field(0.1, gt=0, lt=1)
+    max_tokens: int = Field(1024, description="Drop rows longer than this once templated")
+    contradiction: Optional[ContradictionSpec] = Field(
+        None, description="Replace a share of the train rows with contradiction rows (never in the held-out split)")
+    inoculation: Optional[InoculationSpec] = Field(
+        None, description="Prepend an inoculation system prompt to train rows; test rows are untouched")
+
+    @model_validator(mode="after")
+    def _inoculation_needs_rows(self):
+        if self.inoculation is not None and self.inoculation.apply_to == "contradiction" and self.contradiction is None:
+            raise ValueError("inoculation.apply_to='contradiction' needs data.contradiction (or use apply_to: all).")
+        return self
+
+
+class ErosionTrain(_ErosionSection):
+    epochs: int = Field(1)
+    learning_rate: float = Field(1e-4)
+    batch_size: int = Field(2)
+    lora_r: int = Field(8)
+    lora_alpha: int = Field(16)
+    use_rslora: bool = Field(True, description="False = standard LoRA scaling alpha/r (the Helpfulness Hurts recipe)")
+    gradient_checkpointing: bool = Field(True)
+    checkpoint_fractions: list[float] = Field([0.0, 0.25, 0.5, 0.75, 1.0])
+
+
+class ErosionEval(_ErosionSection):
+    trait: str = Field(...)
+    version: str = Field("eval")
+    heldout_version: Optional[str] = Field(
+        None, description="A second question set scored the same way (the held-out generalisation split)")
+    n_questions: Optional[int] = Field(None, description="First N eval questions; None = all")
+    n_per_question: int = Field(2)
+    max_tokens: int = Field(400)
+    batch_size: Optional[int] = Field(None)
+    judge_model: str = Field(...)
+    judge_base_url: Optional[str] = Field(None)
+    judge_format: JudgeFormat = Field("position_0")
+    coherence_gate: float = Field(50, description="Trait means use only answers with coherence >= this")
+    kl_to_base: bool = Field(
+        False, description="Run the kl step: mean per-token KL(base || checkpoint) over the assistant tokens of "
+                           "held-out test rows (teacher-forced). Judge-free drift readout, as in Heretic's KL objective")
+    kl_rows: int = Field(32, ge=1, description="Held-out rows the kl step scores")
+    recovery_instruction: Optional[str] = Field(
+        None, description="If set, the recovery step re-scores base + final checkpoints with this as the system "
+                          "prompt (was the trait removed, or only hidden?)")
+
+
+class ErosionStrength(_ErosionSection):
+    coefs: list[float] = Field([1.0, 2.0], description="Magnitudes tried, all positions, both signs")
+    n_questions: int = Field(20)
+    n_per_question: int = Field(1)
+    coherence_floor: float = Field(80)
+    relative_floor: Optional[float] = Field(
+        None, description="If set, floor = unsteered coherence - this (for checkpoints that start below 80)")
+
+
+class ErosionDiagnose(_ErosionSection):
+    n_rows: int = Field(16, description="Training rows used for the gradient cosine")
+    n_generate: int = Field(8, description="Rows the model answers itself, for the projection difference")
+    max_new_tokens: int = Field(200)
+
+
+class ErosionCapability(_ErosionSection):
+    enabled: bool = Field(True)
+    n_questions: int = Field(200)
+
+
+class ErosionCruelty(_ErosionSection):
+    enabled: bool = Field(False)
+    grader: str = Field("openai-api/ollamaapi/llama3.1:8b-instruct-q4_K_M", description="Inspect model id for the grader")
+    limit: Optional[int] = Field(None, description="Scenarios per run; None = all")
+    final_only: bool = Field(True, description="Score only each arm's final checkpoint")
+    port: int = Field(8010)
+    max_tokens: int = Field(
+        4096, description="Answer budget. CrueltyBench drops truncated answers ungraded, so too low a cap "
+                          "silently removes the longest (often most careful) answers")
+    crueltybench_dir: str = Field("../crueltybench")
+
+
+class ErosionGates(_ErosionSection):
+    erosion_min_drop: float = Field(10, description="Gate A: the control's trait must fall at least this much")
+
+
+class ErosionConfig(RunConfig):
+    """The full erosion experiment: prep-data -> diagnose -> strength -> train x arms ->
+    eval / capability / shift / cruelty per checkpoint -> summarise. See mcv/pipeline.py."""
+
+    kind: Literal["erosion"] = "erosion"
+
+    model: str = Field(...)
+    device: Optional[str] = Field(None)
+    enable_thinking: Optional[bool] = Field(None)
+    chat_template_source: Optional[str] = Field(
+        None, description="Borrow this repo's chat template when the model ships none (CaML's CPT checkpoint)")
+    vector: ErosionVector
+    arms: dict[str, float] = Field(
+        ...,
+        description=(
+            "Arm name -> steering coefficient during training (0 = unsteered control). "
+            "With auto_strength, the values are signs (-1/0/+1) scaled by the strength "
+            "check's pick."
+        ),
+    )
+    auto_strength: bool = Field(False)
+    arm_schedules: dict[str, ScheduleSpec] = Field(
+        default_factory=dict,
+        description="Arm name -> strength ramp during training. The arm's value in `arms` is the starting strength.")
+    data: ErosionData
+    arm_data: dict[str, ErosionData] = Field(
+        default_factory=dict, description="Per-arm dataset override, e.g. a non-eroding data control (coef 0)")
+    arm_checkpoints: dict[str, list[float]] = Field(
+        default_factory=dict, description="Per-arm checkpoint fractions to score (training still saves all)")
+    train: ErosionTrain = Field(default_factory=ErosionTrain)
+    eval: ErosionEval
+    strength: ErosionStrength = Field(default_factory=ErosionStrength)
+    diagnose: ErosionDiagnose = Field(default_factory=ErosionDiagnose)
+    capability: ErosionCapability = Field(default_factory=ErosionCapability)
+    cruelty: ErosionCruelty = Field(default_factory=ErosionCruelty)
+    gates: ErosionGates = Field(default_factory=ErosionGates)
+    headline_threshold: float = Field(
+        0.5, gt=0, le=1,
+        description=(
+            "Headline metric: samples until an arm's trait falls this fraction of the "
+            "way from the starting score to the control's final score."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _arms_make_sense(self):
+        if not self.arms:
+            raise ValueError("arms must name at least one arm.")
+        if not any(c == 0 for c in self.arms.values()):
+            raise ValueError("arms needs an unsteered control (coefficient 0).")
+        if self.auto_strength and any(c not in (-1, 0, 1) for c in self.arms.values()):
+            raise ValueError("with auto_strength, arm values must be -1, 0 or +1.")
+        for name in self.arm_schedules:
+            if self.arms.get(name, 0) == 0:
+                raise ValueError(f"arm_schedules names {name!r}, which is not a steered arm in arms.")
+        for name in (*self.arm_data, *self.arm_checkpoints):
+            if name not in self.arms:
+                raise ValueError(f"arm_data/arm_checkpoints name {name!r}, which is not in arms.")
+        if any(self.arms[a] != 0 for a in self.arm_data):
+            raise ValueError("arm_data is for unsteered data controls; those arms need coefficient 0.")
+        if not any(c == 0 and a not in self.arm_data for a, c in self.arms.items()):
+            raise ValueError("arms needs an unsteered control on the main dataset.")
+        return self
+
+
 CONFIG_KINDS: dict[str, type[RunConfig]] = {
     "extract": ExtractConfig,
     "eval": EvalConfig,
@@ -1656,6 +1846,7 @@ CONFIG_KINDS: dict[str, type[RunConfig]] = {
     "capability": CapabilityConfig,
     "control": ControlConfig,
     "pipeline": PipelineConfig,
+    "erosion": ErosionConfig,
     "screen": ScreenConfig,
     "compare": CompareConfig,
     "tac": TacConfig,

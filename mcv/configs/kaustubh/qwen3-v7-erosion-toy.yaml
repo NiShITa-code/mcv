@@ -2,12 +2,12 @@
 # step works end to end on the Mac. It does NOT test the claim -- 200 rows, 1 seed.
 #
 #   mcv validate --skip-credentials mcv/configs/kaustubh/qwen3-v7-erosion-toy.yaml
-#   mcv pipeline mcv/configs/kaustubh/qwen3-v7-erosion-toy.yaml
+#   mcv erosion mcv/configs/kaustubh/qwen3-v7-erosion-toy.yaml
 #
 # Arms are signs; the strength step picks the magnitude (largest of coefs whose
 # all-positions steering keeps coherence >= 80 for both signs).
 
-kind: pipeline
+kind: erosion
 name: qwen3-v7-erosion-toy
 seed: 3407
 destination: ./mcv_artifacts/erosion_toy
