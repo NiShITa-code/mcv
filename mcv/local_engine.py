@@ -194,6 +194,15 @@ def load_local_model(
         from peft import PeftModel  # noqa: PLC0415 — only this path needs peft
 
         model = PeftModel.from_pretrained(model, adapter_path).merge_and_unload()
+    # A base/CPT checkpoint stops only on <|endoftext|>, but the chat template ends turns with
+    # <|im_end|>. Fine-tunes learn the latter, so without it generation never stops and every
+    # answer runs to max_tokens, trailing junk past the real end of the turn.
+    if tokenizer.chat_template and "<|im_end|>" in tokenizer.chat_template:
+        im_end = tokenizer.convert_tokens_to_ids("<|im_end|>")
+        eos = model.generation_config.eos_token_id
+        eos = list(eos) if isinstance(eos, (list, tuple)) else [eos] if eos is not None else []
+        if im_end not in eos:
+            model.generation_config.eos_token_id = eos + [im_end]
     return model, tokenizer
 
 

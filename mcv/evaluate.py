@@ -237,10 +237,10 @@ async def judge_answers(cfg, root: Path, frame):
                      if v is not None})
     trait_scores, trait_errors = await local_judge.judge_batch(
         trait_data["eval_prompt"], questions, answers,
-        desc=f"{cfg.name} judging trait", **judge_kw)
+        desc=f"{cfg.name} judging trait", rubric="trait", **judge_kw)
     coherence_scores, coherence_errors = await local_judge.judge_batch(
         Prompts["coherence_0_100"], questions, answers,
-        desc=f"{cfg.name} judging coherence", **judge_kw)
+        desc=f"{cfg.name} judging coherence", rubric="coherence", **judge_kw)
 
     scored = frame.copy()
     scored[cfg.trait] = trait_scores

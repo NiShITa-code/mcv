@@ -235,7 +235,7 @@ def test_the_package_list_covers_the_test_package(pyproject):
     """mcv.tests ships with the library on purpose -- a reproducibility library should
     let its user run its own suite -- and the tests import each other's fixtures, so
     leaving the sub-package out installs a broken one."""
-    assert set(pyproject["tool"]["setuptools"]["packages"]) == {"mcv", "mcv.tests"}
+    assert set(pyproject["tool"]["setuptools"]["packages"]) == {"mcv", "mcv.erosion", "mcv.tests"}
 
 
 def test_the_licence_and_notice_ship_with_the_package(pyproject):

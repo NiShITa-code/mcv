@@ -65,6 +65,7 @@ local = [
     "transformers>=4.40",
     "peft>=0.10",
     "openai>=1.0",
+    "httpx>=0.25",
     "pandas>=2.0",
     "numpy>=1.24",
     "tqdm>=4.65",
@@ -85,7 +86,7 @@ tac = ["inspect-ai>=0.3"]
 dev = ["pytest>=8.0"]
 
 all = [
-    "torch>=2.0", "transformers>=4.40", "peft>=0.10", "openai>=1.0",
+    "torch>=2.0", "transformers>=4.40", "peft>=0.10", "openai>=1.0", "httpx>=0.25",
     "pandas>=2.0", "numpy>=1.24", "tqdm>=4.65",
     "huggingface_hub>=0.23", "datasets>=2.18", "inspect-ai>=0.3",
 ]
@@ -104,7 +105,7 @@ mcv = "mcv.run:main"
 # installs fine and then cannot be imported from its own source tree: the package and
 # the repo root are the same directory, and nothing can put that directory's parent on
 # sys.path. Owning the repo removes the constraint that made the trick worth it.
-packages = ["mcv", "mcv.tests"]
+packages = ["mcv", "mcv.erosion", "mcv.tests"]
 
 [tool.setuptools.package-data]
 # Shipped with the library on purpose. The example configs are documentation -- they

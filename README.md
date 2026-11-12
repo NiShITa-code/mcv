@@ -100,6 +100,7 @@ clone to a finished vector. Stuck on something specific?
 | `rebuild-vectors` | Recompute vectors from existing CSVs, after the rendered-prompt fix |
 | `batch` | Several configs in one process, loading each model once |
 | `pipeline` | A whole arm as one config: validated up front, dependency-ordered, resumable after a kill |
+| `erosion` | The erosion experiment as one config (`kind: erosion`): data prep, strength pick, diagnose, train per arm with steering on, readouts on the bare checkpoint, summary. Resumable per step; `--steps` and `--arms` select a subset. Needs a GPU for real runs |
 
 Every run command takes `--smoke` (a cheap deterministic pass to check the plumbing)
 and `--rerun` (a previous attempt left a manifest — archive it and go again).
