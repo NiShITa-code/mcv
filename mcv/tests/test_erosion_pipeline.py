@@ -140,7 +140,7 @@ def test_model_load_passes_the_borrowed_chat_template(tmp_path, monkeypatch):
 
 
 def test_mean_kl_zero_for_identical_and_positive_otherwise():
-    import torch
+    torch = pytest.importorskip("torch")
 
     from mcv.erosion.pipeline import STEPS, mean_kl
 

@@ -90,12 +90,12 @@ async def score_one(client, url: str, body: dict, semaphore: asyncio.Semaphore, 
 
 async def jev_batch(questions: list[str], answers: list[str], *, judge_model: str, rubric: str,
                     base_url: Optional[str] = None, concurrency: int = 4, desc: str = "judging"):
-    import httpx  # noqa: PLC0415
-    from tqdm.asyncio import tqdm_asyncio  # noqa: PLC0415
-
     key = os.environ.get("OPENAI_API_KEY")
     if not key:
         raise RuntimeError("jev_decisions judge needs OPENAI_API_KEY (the OpenRouter key) in the environment")
+    import httpx  # noqa: PLC0415
+    from tqdm.asyncio import tqdm_asyncio  # noqa: PLC0415
+
     url, semaphore = decisions_url(base_url), asyncio.Semaphore(concurrency)
     async with httpx.AsyncClient(headers={"Authorization": f"Bearer {key}"}, timeout=180) as client:
         results = await tqdm_asyncio.gather(*[

@@ -67,6 +67,8 @@ def test_schedule_reaches_the_hook_on_every_training_step_including_after_a_chec
                         schedule=ScheduleSpec(start_fraction=0.0, end_multiple=2.0))
     train.run(_cfg(tmp_path, training_file, steering=spec, checkpoint_fractions=[0.5]), repo_root=tmp_path)
 
-    # 4 optimizer steps on this fixture (7 train rows, batch 2). The hook also fires once more in the
-    # end-of-run held-out loss, which still runs inside the steering block in train.py (pre-existing).
-    assert seen[:4] == pytest.approx([1.25, 1.5, 1.75, 2.0]), seen  # climbs 1 -> 2, no freeze after the checkpoint
+    # 4 optimizer steps on this fixture (7 train rows, batch 2). The hook also fires on the checkpoint
+    # evaluation and once more in the end-of-run held-out loss, so extra repeated values appear.
+    # A frozen schedule (a stale first steerer after the checkpoint) would never reach 1.75 or 2.0.
+    assert seen == sorted(seen), seen
+    assert {round(c, 2) for c in seen} >= {1.25, 1.5, 1.75, 2.0}, seen
