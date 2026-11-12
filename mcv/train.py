@@ -288,7 +288,7 @@ def _run_local(cfg: TrainConfig, root: Path, manifest, registry) -> dict[str, An
     import torch  # noqa: PLC0415
 
     from mcv.local_engine import load_local_model  # noqa: PLC0415
-    from mcv.steering import apply_steering  # noqa: PLC0415
+    from mcv.steering import apply_steering, scheduled_coef  # noqa: PLC0415
 
     with registry.track_run(
         run_id=manifest.run_id, name=cfg.name, manifest_path=str(root / "train_runs" / cfg.name),
@@ -374,7 +374,7 @@ def _run_local(cfg: TrainConfig, root: Path, manifest, registry) -> dict[str, An
         checkpoints: list[dict[str, Any]] = []
         losses = []
         step = 0
-        with steer:
+        with steer as steerer:
             # Fraction 0.0 is saved before any update, and only on a fresh run -- on a
             # resume the untrained baseline already exists and re-saving it would
             # overwrite it with a model that has since been trained.
@@ -391,6 +391,10 @@ def _run_local(cfg: TrainConfig, root: Path, manifest, registry) -> dict[str, An
                     step += 1
                     if step <= resume_from:
                         continue  # already consumed before the interruption
+                    if steerer is not None and cfg.steering.schedule is not None:
+                        # The hook reads steerer.coeff on every forward, so setting it
+                        # here changes the strength of this step's pass.
+                        steerer.coeff = scheduled_coef(cfg.steering, step, total_steps)
                     batch = _collate(train_examples[i : i + bs], pad_id)
                     outputs = model(**batch)
                     outputs.loss.backward()

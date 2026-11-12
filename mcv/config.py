@@ -127,6 +127,17 @@ def question_set_generation(version: str) -> str:
     return version[len(side):]
 
 
+class ScheduleSpec(BaseModel):
+    """Dynamic strength (Guan et al. 2609.10142, "Progressive Intensity Scheduling"): hold the
+    starting coefficient for the first `start_fraction` of steps, then ramp it linearly so it
+    ends at `end_multiple` x the starting coefficient."""
+
+    model_config = {"extra": "forbid"}
+
+    start_fraction: float = Field(0.2, ge=0, lt=1, description="Share of training steps at the starting strength")
+    end_multiple: float = Field(2.0, gt=1, description="Final strength as a multiple of the starting strength")
+
+
 class SteeringSpec(BaseModel):
     """A steering intervention: which vector, where, how strong, over what positions."""
 
@@ -136,6 +147,7 @@ class SteeringSpec(BaseModel):
     layer: int = Field(..., description="Upstream's convention: vector[layer] <-> model.layers[layer-1]")
     coef: float = Field(..., description="Steering coefficient; sign flips direction")
     positions: PositionType = Field("response", description="Which token positions get steered (F4)")
+    schedule: Optional[ScheduleSpec] = Field(None, description="None = constant strength; else ramp it during training")
     normalise: bool = Field(
         False,
         description=(
