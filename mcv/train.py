@@ -285,10 +285,19 @@ def _collate(batch: list[tuple[list[int], list[int]]], pad_token_id: int):
 
 
 def _run_local(cfg: TrainConfig, root: Path, manifest, registry) -> dict[str, Any]:
+    import sys  # noqa: PLC0415
+
     import torch  # noqa: PLC0415
 
     from mcv.local_engine import load_local_model  # noqa: PLC0415
     from mcv.steering import apply_steering, scheduled_coef  # noqa: PLC0415
+
+    # _default_target_modules() reads upstream's validate.TrainingConfig rather than
+    # duplicating its default here, so this path needs the clone importable too.
+    # _run_upstream does this for itself; without the same line here, engine='local'
+    # only works when the process happens to be running from inside the clone.
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
 
     with registry.track_run(
         run_id=manifest.run_id, name=cfg.name, manifest_path=str(root / "train_runs" / cfg.name),
@@ -307,10 +316,20 @@ def _run_local(cfg: TrainConfig, root: Path, manifest, registry) -> dict[str, An
         else:
             train_rows, test_rows = split_rows(rows, seed=cfg.seed)
 
-        model, tokenizer = load_local_model(cfg.model, device=cfg.device)
+        model, tokenizer = load_local_model(
+            cfg.model, device=cfg.device, chat_template_source=cfg.chat_template_source)
         target_modules = cfg.target_modules or _default_target_modules()
+        if cfg.gradient_checkpointing:
+            # Order matters. enable_input_require_grads() first, or the re-computed
+            # activations come back detached from a frozen embedding and the LoRA
+            # parameters get no gradient — training runs, the loss does not move, and
+            # nothing reports an error.
+            model.enable_input_require_grads()
+            model.gradient_checkpointing_enable()
         model = _build_peft_model(cfg, model, target_modules)
         model.train()
+        if cfg.gradient_checkpointing:
+            model.config.use_cache = False  # incompatible with checkpointing; warns otherwise
 
         pad_id = tokenizer.pad_token_id
         if pad_id is None:

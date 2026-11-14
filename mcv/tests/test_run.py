@@ -420,8 +420,10 @@ def test_execute_dispatches_every_registered_kind_without_a_nameerror(
         "tac": dict(kind="tac", name="x", destination="d", log_paths=["nonexistent.eval"]),
         "pipeline": dict(kind="pipeline", name="x", destination="d",
                          stages=[dict(name="s", config=str(tmp_path / "compare.yaml"))]),
+        # str(a), not "v.pt": validate now checks erosion's vector the way it already
+        # checked every other kind's, so a path that was never written fails here.
         "erosion": dict(kind="erosion", name="x", destination="d", model="m",
-                        vector={"path": "v.pt", "layer": 26}, data={"source": "d", "n_rows": 10},
+                        vector={"path": str(a), "layer": 26}, data={"source": "d", "n_rows": 10},
                         eval={"trait": "t", "judge_model": "j"}, arms={"minus": -1, "control": 0}),
         "control": dict(kind="control", name="x", destination="d",
                         vector_path=str(a)),

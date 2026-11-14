@@ -224,6 +224,17 @@ def validate(
             vec_path = root / vec_path
         if not vec_path.exists():
             problems.append(f"steering.vector_path does not exist: {vec_path}")
+    elif getattr(steered, "vector", None) is not None:
+        # ErosionConfig keeps its vector under `vector.path`, not `steering`, so the
+        # branch above never fires for it. Erosion is also the kind that loads an 8B and
+        # then trains three arms, which makes it the worst one to discover a missing
+        # vector inside. Resolve it the way the pipeline does (_Pipeline.vector_path:
+        # root / cfg.vector.path) so validate and the run agree on the same file.
+        vec_path = Path(steered.vector.path)
+        if not vec_path.is_absolute():
+            vec_path = root / vec_path
+        if not vec_path.exists():
+            problems.append(f"vector.path does not exist: {vec_path}")
 
     if isinstance(cfg, SweepConfig) and vec_path is not None and vec_path.exists():
         # A bad layer is cheap to catch here and expensive to discover at point 4 of 12

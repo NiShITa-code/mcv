@@ -699,6 +699,25 @@ class TrainConfig(RunConfig):
     device: Optional[str] = Field(
         None, description="engine='local' only. Torch device, e.g. 'mps' or 'cpu'.",
     )
+    chat_template_source: Optional[str] = Field(
+        None,
+        description=(
+            "engine='local' only. Borrow this repo's chat template when the model ships "
+            "none (CaML's CPT checkpoint). Every row is rendered through "
+            "apply_chat_template, so a checkpoint without one crashes as soon as "
+            "training starts. ExtractConfig and EvalConfig already carry this; it was "
+            "missing here, which made the erosion pipeline's train step unconstructable."
+        ),
+    )
+    gradient_checkpointing: bool = Field(
+        True,
+        description=(
+            "engine='local' only. Trade compute for activation memory, which is what "
+            "makes an 8B LoRA fit on a laptop. Requires enable_input_require_grads() "
+            "under PEFT, or the re-computed activations arrive detached and no LoRA "
+            "gradient is produced at all."
+        ),
+    )
     loss: Literal["sft", "dpo", "orpo"] = Field(
         "sft",
         description=(

@@ -150,3 +150,34 @@ def test_mean_kl_zero_for_identical_and_positive_otherwise():
     expected = float((a[0].exp() * (a[0] - b[0])).sum()) / 2  # second row is identical -> 0
     assert abs(mean_kl(a, b) - expected) < 1e-6 and expected > 0
     assert "kl" in STEPS and STEPS.index("kl") < STEPS.index("cruelty")
+
+
+def test_the_train_config_the_pipeline_builds_actually_validates():
+    """_Pipeline.train() hands TrainConfig a fixed set of keyword arguments. TrainConfig
+    is extra="forbid", so one field the schema does not declare makes `mcv erosion` die
+    at step 3 of 11 with a ValidationError, on every machine.
+
+    That shipped: the pipeline passed chat_template_source and gradient_checkpointing
+    and TrainConfig declared neither. Nothing caught it, because every other test in
+    this file exercises a pure helper and none of them crosses into mcv.train.
+
+    Read the keywords off the real call site, so the check cannot drift from the code it
+    is checking. No model, no vector, no GPU."""
+    import ast
+    import inspect
+    import textwrap
+
+    from mcv.erosion import pipeline as P
+
+    tree = ast.parse(textwrap.dedent(inspect.getsource(P._Pipeline.train)))
+    calls = [n for n in ast.walk(tree)
+             if isinstance(n, ast.Call) and getattr(n.func, "id", None) == "TrainConfig"]
+    assert len(calls) == 1, f"expected one TrainConfig(...) in train(), found {len(calls)}"
+
+    passed = {kw.arg for kw in calls[0].keywords if kw.arg}
+    undeclared = passed - set(TrainConfig.model_fields)
+    assert not undeclared, (
+        f"_Pipeline.train() passes {sorted(undeclared)} to TrainConfig, which declares "
+        f"neither and forbids extras, so `mcv erosion` dies at the train step. Add the "
+        f"field to TrainConfig and wire it in mcv/train.py, or stop passing it."
+    )
