@@ -1393,3 +1393,47 @@ unset, so a config without it skips the recovery step and says nothing about it.
 **Outputs land under `--repo-root`, not the working directory.** The run above writes to
 `../persona_vectors/pipeline_runs/plumbing-cpu/`. On a pod, that is the directory to
 copy off before you terminate.
+
+## Run the test suite the way CI runs it
+
+`pytest mcv/tests -q` on a laptop skips a large block of the suite. Those are not
+slow or optional tests. They are the ones that build a real model, and they skip
+because
+`mcv/tests/_paths.py` looks for upstream *beside the package* and does not find it:
+
+```
+HAS_UPSTREAM = (REPO_ROOT / "eval").is_dir() and (REPO_ROOT / "activation_steer.py").is_file()
+```
+
+A clone at `../persona_vectors` does not satisfy that, and neither does `--repo-root`.
+So the local suite can be green while CI fails, and the gap is exactly the code paths
+that touch a model. That has happened: a keyword was added to `load_local_model`'s
+call site, every test exercising it skipped on the laptop it was written on, and the
+stale stubs failed on CI.
+
+CI copies upstream's `eval/` and its root modules into the checkout. Do the same:
+
+```bash
+cd /path/to/mcv
+for f in ../persona_vectors/*.py; do cp "$f" .; done
+cp -r ../persona_vectors/eval eval
+
+OPENAI_API_KEY=sk-dummy HF_TOKEN=hf-dummy pytest mcv/tests -q
+```
+
+The dummy keys are what CI uses. `eval_persona.py`, `judge.py` and `training.py` call
+`setup_credentials()` at import time, so the import fails without something set. No
+request is made.
+
+Those copies are gitignored, listed by name at the bottom of `.gitignore`. mcv's
+architecture rule is that no upstream source lives in this repo, and one `git add -A`
+after this would break it without anyone noticing. Delete them when you are done:
+
+```bash
+rm -rf eval && rm -f activation_steer.py config.py generate_vec.py judge.py \
+    sft.py training.py utils.py validate.py
+```
+
+On Windows a directory junction (`mklink /J`) to the clone is **not** enough on its
+own, because the check wants the files at the repo root, not a `persona_vectors/`
+directory beside them.

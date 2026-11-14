@@ -398,14 +398,17 @@ def capture_runtime(monkeypatch):
         seen["judge"].append(kw)
         return [75.0] * len(questions), [None] * len(questions)
 
-    def spy_load(model_name, *, device=None, chat_template_source=None):
+    def spy_load(model_name, *, device=None, chat_template_source=None,
+                 adapter_path=None):
         # Mirrors load_local_model's real signature. It has to: a spy that silently
         # falls behind raises TypeError at the call, which a test asserting only that
-        # *something* raised would read as success.
+        # *something* raised would read as success. Pinned by
+        # test_local_engine.test_every_load_local_model_stub_matches_the_real_signature.
         seen["load"].append(device)
         seen["load_kwargs"].append(
             {"model_name": model_name, "device": device,
-             "chat_template_source": chat_template_source})
+             "chat_template_source": chat_template_source,
+             "adapter_path": adapter_path})
         raise _DevicePathReached("device path reached")
 
     monkeypatch.setattr(le, "local_generate", spy_generate)

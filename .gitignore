@@ -39,3 +39,22 @@ site/
 persona_vectors/
 train_runs/
 pipeline_runs/
+
+# The upstream overlay. CI copies persona_vectors' eval/ and its root modules into
+# the checkout, because mcv/tests/_paths.py looks for them beside the package: that
+# is what makes the integration tests run instead of skip. Reproduce it locally and
+# these files land at the repo root, untracked and not obviously upstream's.
+#
+# mcv's architecture rule is that no upstream source lives in this repo. One
+# `git add -A` after a local CI-equivalent run would break it silently, so ignore
+# them. The repo has no root-level .py files of its own; every name here is
+# upstream's at b8e0f04. Add to the list if upstream grows another.
+/eval/
+/activation_steer.py
+/config.py
+/generate_vec.py
+/judge.py
+/sft.py
+/training.py
+/utils.py
+/validate.py

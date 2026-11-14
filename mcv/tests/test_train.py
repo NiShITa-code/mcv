@@ -175,8 +175,13 @@ def workspace(tmp_path, tiny_qwen, tiny_tokenizer, monkeypatch):
     training_file = tmp_path / "erosion.jsonl"
     training_file.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
 
-    monkeypatch.setattr(local_engine, "load_local_model",
-                        lambda model_name, *, device=None: (tiny_qwen, tiny_tokenizer))
+    # Keyword-for-keyword with load_local_model's real signature. A stub that falls
+    # behind raises TypeError inside train.run, which reads as a bug in the code under
+    # test rather than as a stale stub. test_local_engine.py pins this.
+    def load(model_name, *, device=None, chat_template_source=None, adapter_path=None):
+        return tiny_qwen, tiny_tokenizer
+
+    monkeypatch.setattr(local_engine, "load_local_model", load)
     monkeypatch.chdir(tmp_path)
     return tmp_path, str(training_file)
 
@@ -301,12 +306,13 @@ def test_steering_during_training_changes_the_trained_weights(tmp_path, tiny_tok
 
     monkeypatch.chdir(tmp_path)
 
-    # Signature mirrors load_local_model's, chat_template_source included. train.run
-    # does not pass it today; a stub that silently falls behind raises TypeError at the
-    # call, which reads as an unrelated failure rather than as "the loader grew an
-    # argument this test has not been told about".
+    # Signature mirrors load_local_model's. train.run does pass chat_template_source
+    # now; a stub that silently falls behind raises TypeError at the call, which reads
+    # as an unrelated failure rather than as "the loader grew an argument this test has
+    # not been told about".
     def loader_returning(model):
-        def load(model_name, *, device=None, chat_template_source=None):
+        def load(model_name, *, device=None, chat_template_source=None,
+                 adapter_path=None):
             return model, tiny_tokenizer
         return load
 

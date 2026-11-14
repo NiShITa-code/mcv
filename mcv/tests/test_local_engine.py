@@ -349,3 +349,81 @@ def test_local_generate_steering_refuses_model_mismatch(tiny_qwen, tiny_tokenize
             tiny_qwen, tiny_tokenizer, [[{"role": "user", "content": "t1"}]],
             steering=spec, repo_root=REPO_ROOT, max_tokens=3,
         )
+
+
+# --------------------------------------------------------------------------
+# Stub drift — no torch, no model
+# --------------------------------------------------------------------------
+
+def test_every_load_local_model_stub_matches_the_real_signature():
+    """Tests that train or generate stub load_local_model so no weights are fetched.
+    Each stub repeats the real signature by hand. Add a keyword to the real function
+    and start passing it, and every stale stub raises TypeError at the call site —
+    inside the code under test, so it reads as a bug in that code rather than as a
+    stub that fell behind.
+
+    That is not hypothetical twice over. A load spy whose signature had fallen behind
+    was hidden once by a `pytest.raises(Exception)` broad enough to accept the
+    TypeError as success. Then `chat_template_source` was added to TrainConfig and
+    passed from train._run_local, and eleven tests in test_train.py failed on CI —
+    only on CI, because every one of them is gated on torch and skips on a laptop
+    without it. This test is not gated: it reads signatures, loads nothing, and fails
+    on the machine the change is made on.
+    """
+    import ast
+    import inspect
+
+    # Upstream's save_persona_vector also takes model_name first. Stubs of it are a
+    # different function and are not in scope. Nothing else in mcv/tests opens with
+    # that parameter; if something does, add it here deliberately.
+    NOT_LOADER_STUBS = {"save_persona_vector"}
+
+    required = {
+        name for name, p in inspect.signature(local_engine.load_local_model).parameters.items()
+        if p.kind is inspect.Parameter.KEYWORD_ONLY
+    }
+    assert required, "load_local_model has no keyword-only parameters; this test assumes it does"
+
+    tests_dir = Path(__file__).resolve().parent
+    stubs, patched_files = [], set()
+    for path in sorted(tests_dir.glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            # Where is load_local_model replaced at all?
+            if (isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute) and node.func.attr == "setattr"
+                    and any(isinstance(a, ast.Constant) and a.value == "load_local_model"
+                            for a in node.args)):
+                patched_files.add(path.name)
+            # What does a stub of it look like?
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+                positional = node.args.posonlyargs + node.args.args
+                if not positional or positional[0].arg != "model_name":
+                    continue
+                if getattr(node, "name", "<lambda>") in NOT_LOADER_STUBS:
+                    continue
+                stubs.append((path.name, node.lineno, getattr(node, "name", "<lambda>"),
+                              {a.arg for a in node.args.kwonlyargs}, node.args.kwarg is not None))
+
+    assert stubs, (
+        "found no load_local_model stubs at all. Either the fingerprint this test "
+        "matches on (first parameter named model_name) no longer holds, or the stubs "
+        "are gone. Both mean this test is checking nothing.")
+
+    stale = [
+        f"{file}:{line} {name} is missing {sorted(required - accepts)}"
+        for file, line, name, accepts, takes_kwargs in stubs
+        if not takes_kwargs and not required <= accepts
+    ]
+    assert not stale, (
+        "these load_local_model stubs no longer match the real signature "
+        f"{sorted(required)}:\n  " + "\n  ".join(stale))
+
+    # A stub wired up some other way, whose first parameter is not model_name, would
+    # be invisible above. Every file that replaces load_local_model must contain at
+    # least one thing this test actually checked.
+    unchecked = patched_files - {file for file, *_ in stubs}
+    assert not unchecked, (
+        f"{sorted(unchecked)} replace load_local_model with something this test could "
+        f"not find. Name the stub's first parameter model_name, as the real function "
+        f"does, so it is checked too.")

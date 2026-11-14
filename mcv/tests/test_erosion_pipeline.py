@@ -133,7 +133,12 @@ def test_model_load_passes_the_borrowed_chat_template(tmp_path, monkeypatch):
         def eval(self):
             return self
 
-    monkeypatch.setattr(local_engine, "load_local_model", lambda name, **kw: (seen.update(kw) or (M(), object())))
+    # model_name, not name: test_local_engine pins every load_local_model stub against
+    # the real signature, and finds them by that first parameter. **kw is deliberate
+    # here — this stub captures the keywords rather than declaring them.
+    monkeypatch.setattr(
+        local_engine, "load_local_model",
+        lambda model_name, **kw: (seen.update(kw) or (M(), object())))
     cfg = ErosionConfig(**BASE, arms={"control": 0}, chat_template_source="Qwen/Qwen3-8B")
     _Pipeline(cfg, tmp_path, None).model()
     assert seen.get("chat_template_source") == "Qwen/Qwen3-8B"
