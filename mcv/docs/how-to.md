@@ -1363,3 +1363,33 @@ rather than silently rebuilding the old vector.
 unsteered and steered (layer 20, coef 3, response positions) for CrueltyBench; the header
 of each file has the `inspect eval` command. Both use the notebook vector from
 the Mac replication branch, which has no sidecar, so `validate` warns about provenance.
+
+## Check the erosion pipeline runs at all, with no GPU and no judge
+
+`mcv erosion` has eleven steps. Four of them (`prep-data`, `diagnose`, `shift`,
+`recovery`) have no unit tests, so "the suite is green" does not mean they execute.
+Finding that out on a rented GPU is the expensive way.
+
+`mcv/configs/plumbing-cpu.yaml` is the cheap way. It runs the judge-free steps on
+Qwen2.5-0.5B-Instruct on CPU:
+
+```bash
+python -m mcv.run erosion mcv/configs/plumbing-cpu.yaml \
+    --repo-root ../persona_vectors \
+    --steps prep-data,train,shift,kl,capability
+```
+
+It produces no number worth reading, and it is not meant to. The model is 0.5B, the
+vector is synthetic, the trait is `evil` rather than yours, and 18 training rows will
+not move Gate A. The only question it answers is whether each step runs.
+
+`eval`, `recovery`, `diagnose` and `summarise` need a judge endpoint, so they are not in
+that `--steps` list. To cover them you need an OpenAI-compatible judge; on a laptop that
+means Ollama. `mcv/configs/qwen3-cpt/qwen3-v7-erosion-plumbing.yaml` is the same idea at
+8B with the judge steps included, and unlike the toy config it sets
+`eval.recovery_instruction` — `pipeline.recovery()` returns immediately when that is
+unset, so a config without it skips the recovery step and says nothing about it.
+
+**Outputs land under `--repo-root`, not the working directory.** The run above writes to
+`../persona_vectors/pipeline_runs/plumbing-cpu/`. On a pod, that is the directory to
+copy off before you terminate.
