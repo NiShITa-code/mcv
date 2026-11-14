@@ -211,7 +211,7 @@ def test_tool_call_rows_are_refused_with_the_reason(tmp_path):
     assert "1 row(s) end in a tool call" in problems[0]
     assert "line 1" in problems[0]
     # It must not silently choose what an action means as text — that is B/D's call.
-    assert "workstream B/D" in problems[0]
+    assert "Decide with the team" in problems[0]
 
 
 def test_empty_final_content_is_refused(tmp_path):

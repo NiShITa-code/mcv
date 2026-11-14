@@ -31,7 +31,7 @@ Qwen2.5-7B-Instruct, layer 20, coef 3. All three rows use the same 5 instruction
 | v1inst | 46/100 | 12.4 | 21.7 | +9.4 [+5.2, +14.7] | 88.0 → 84.9 | 7.78 |
 | v1inst_nofs | 35/100 | 5.0 | 25.5 | +20.5 [+13.9, +27.0] | 88.1 → 81.0 | 11.07 |
 
-v2eval: the HF v2 vector on v2's own held-out eval set and v2 rubric (from `jackie/harness-foundation` d77c67e). Different instructions, rubric and questions from the rows above, so not a head-to-head.
+v2eval: the HF v2 vector on v2's own held-out eval set and v2 rubric (from commit d77c67e). Different instructions, rubric and questions from the rows above, so not a head-to-head.
 
 | condition | trait | coherence | run id |
 |---|---|---|---|
@@ -41,14 +41,38 @@ v2eval: the HF v2 vector on v2's own held-out eval set and v2 rubric (from `jack
 
 qwen3b/human (Qwen3-8B-Base, layer 26): extraction kept 3/100 pairs; baseline 5.0, coherence 73.5. The steered eval at coef 3 crashed with NaN probabilities (raw norm ~37 at layer 26 overflows in bf16 on MPS), so there is no steered result.
 
+## Figures
+
+Rebuild all of these with `python figures/make_figures.py` from the CSVs in this
+directory. The figures are derived, not hand-made. A corrected CSV changes the
+figure.
+
+![Trait score and coherence, baseline vs steered, for the three Qwen2.5 question sets. Error bars are 95% bootstrap intervals over eval questions.](figures/fig1_means.png)
+
+*Trait score and coherence, baseline vs steered. The three panels use different
+question sets, so compare within a panel and not across them.*
+
+![Distribution of per-answer trait scores, baseline against steered.](figures/fig2_distribution.png)
+
+*Steering moves answers out of the zero-score bin. Much of the change in the mean is
+answers leaving zero rather than high scores going higher.*
+
+![Per-question mean trait score, ten answers each, sorted by steering delta.](figures/fig3_per_question.png)
+
+*Per-question mean trait score (10 answers each), sorted by steering delta. The spread
+across questions is wide enough that a question-level bootstrap is the honest interval.*
+
+Four more in `figures/`, cut for slides rather than for reading here:
+`slide_means.png`, `slide_deltas.png`, `slide_survival.png`, `slide_v2_questions.png`.
+
 ## Known caveats
 
 - 83–92% of eval answers hit the 250-token cap, and the judge scores the truncated text.
 - Vector norms differ across datasets, so the same coef is a different push in each; the dataset ranking mostly tracks norm.
 - Judge rows with no score are dropped from the means, unevenly across conditions (e.g. nofs 3 baseline vs 9 steered).
-- Coef 3 came from a sweep on the eval outcome (`kaustubh-replicate`), not a held-out criterion.
+- Coef 3 came from a sweep on the eval outcome (the Mac replication branch), not a held-out criterion.
 - Runs came from a dirty tree at e78e1bb; the uncommitted fixes are the ones committed in this PR. The HF v1/v2/v3 manifests record no commit; their question sets are pinned to d77c67e, the only version in history, and every row matches it.
-- The v1 instruction pairs here are Jackie's Sept 17 set, not the plan80 set, so none of this compares with the earlier 400-generation runs.
+- The v1 instruction pairs here are the Sept 17 set, not the plan80 set, so none of this compares with the earlier 400-generation runs.
 
 ## Layout
 

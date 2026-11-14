@@ -13,4 +13,4 @@ max_tokens: 250
 version: eval
 n_per_question: 10
 steering: null
-notes: HF v2 vector (run ce849e175d7c) on the v2 held-out eval set and v2 rubric (trait_data_eval/..._v2.json from origin/jackie/harness-foundation d77c67e). Baseline.
+notes: HF v2 vector (run ce849e175d7c) on the v2 held-out eval set and v2 rubric (trait_data_eval/..._v2.json from commit d77c67e). Baseline.

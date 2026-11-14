@@ -195,8 +195,8 @@ async def judge_batch(
     # A base_url is not always a keyless local server: OpenRouter and friends are
     # OpenAI-compatible endpoints that need a real key, and hardcoding "local" here
     # made those impossible to use at all. Fall back to "local" so a genuinely local
-    # server still works with no key set. (Fix from Jackie, whose OpenRouter judge hit
-    # this.)
+    # server still works with no key set. (Fix contributed by a team member whose
+    # OpenRouter judge hit this; credited by name in NOTICE.)
     import os  # noqa: PLC0415
 
     client = (

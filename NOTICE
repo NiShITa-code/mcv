@@ -57,24 +57,21 @@ train/test split is seeded, and token positions are selected explicitly.
 Research context
 --------------------------------------------------------------------------------
 
-Built as Workstream C of the Moral Consideration Vectors arm of the Sentient Futures
-Project Incubator, with Compassion in Machine Learning (CaML).
+Built for the Moral Consideration Vectors arm of the Sentient Futures Project
+Incubator, with Compassion in Machine Learning (CaML).
 
-The library is the contribution offered here. The trait definitions, elicitation
-question sets, evaluation rubrics, trained vectors and experimental results produced
-alongside it are the research output of the wider team and are not covered by this
-notice.
+The library is the contribution offered here. The trait definitions, question sets,
+evaluation rubrics, trained vectors and experimental results are research output of
+the team. This notice does not cover them.
 
-Contributions from the wider team are carried in the code and credited at the point
-of use, by workstream rather than by name -- naming colleagues in a public document is
-theirs to agree to, not mine to assume:
+The code carries contributions from the team. Each one is credited where it is used:
 
     mcv/local_engine.py, mcv/local_judge.py   ported from a validated replication by
-                                              Workstream B
+                                              Kaustubh Gupta
     mcv/local_judge.py                        OpenRouter judge authentication fix,
-                                              from Workstream A
+                                              from Jacqueline Payne
     mcv/artifacts.py                          absolute-path resolution for local
-                                              destinations, from Workstream B
+                                              destinations, from Kaustubh Gupta
 
 
 --------------------------------------------------------------------------------

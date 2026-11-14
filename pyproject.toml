@@ -32,7 +32,14 @@ requires-python = ">=3.10"
 # developer machine with an older setuptools and failed on the first push.
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
-authors = [{ name = "Nishita Jain" }]
+# Everyone who contributed code, in alphabetical order by surname. No email
+# addresses: this file is public.
+authors = [
+    { name = "Aaina Garg" },
+    { name = "Kaustubh Gupta" },
+    { name = "Nishita Jain" },
+    { name = "Jacqueline Payne" },
+]
 keywords = ["interpretability", "activation-steering", "persona-vectors", "reproducibility"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -82,6 +89,13 @@ data = ["datasets>=2.18", "pandas>=2.0", "transformers>=4.40"]
 # Reading a real TAC .eval log. Deliberately separate: inspect_ai is a large dependency
 # that only `mcv tac` and `inspect eval` itself need.
 tac = ["inspect-ai>=0.3"]
+
+# Builds the documentation site (mkdocs.yml). You do not need it to use mcv. The same
+# pages render on GitHub as plain markdown. The site is a convenience over them, not a
+# second copy. It stays out of `all`, which holds runtime dependencies for experiments.
+#   mkdocs serve          # preview at http://127.0.0.1:8000
+#   mkdocs build --strict
+docs = ["mkdocs-material>=9.5"]
 
 dev = ["pytest>=8.0"]
 

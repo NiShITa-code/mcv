@@ -29,4 +29,4 @@ threshold: 50                   # generate_vec's filter: pos>=50, neg<50, cohere
 
 notes: >
   Upstream reproduction, step 1. Validates the extraction pipeline end to end before
-  we point it at Jackie's moral-consideration trait.
+  we point it at the moral-consideration trait.

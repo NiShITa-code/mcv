@@ -11,7 +11,7 @@ where it stopped (training itself resumes from its newest checkpoint).
 All outputs live in pipeline_runs/<name>/. Checkpoints live in
 train_runs/<name>-<arm>/ckpt_<pct>/ (mcv.train's layout).
 
-    mcv erosion mcv/configs/kaustubh/qwen3-v7-erosion-toy.yaml
+    mcv erosion mcv/configs/qwen3-cpt/qwen3-v7-erosion-toy.yaml
     mcv erosion <cfg> --steps eval,summarise --arms control
 """
 

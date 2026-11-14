@@ -143,7 +143,7 @@ def test_steering_spec_normalise_defaults_false():
 
 
 # --------------------------------------------------------------------------
-# Ablation knobs — the parameters workstream B actually wants to vary
+# Ablation knobs: the parameters the ablation configs actually vary
 # --------------------------------------------------------------------------
 
 def test_extract_exposes_the_generation_length():
@@ -181,7 +181,7 @@ def test_local_only_overrides_are_accepted_on_the_local_engine():
 
 
 def test_the_trait_rubric_is_not_a_config_field():
-    """It lives in the trait JSON (workstream A's eval_prompt) so the instrument and the
+    """It lives in the trait JSON (its eval_prompt) so the instrument and the
     trait definition cannot drift apart. Only coherence is overridable."""
     assert "trait_prompt" not in ExtractConfig.model_fields
     assert "eval_prompt" not in ExtractConfig.model_fields

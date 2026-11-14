@@ -90,7 +90,7 @@ def test_eval_conversations_carry_no_system_prompt(trait_data):
 
 def test_persona_instruction_wraps_eval_questions_in_a_system_prompt(trait_data):
     """The point of the field: try a candidate instruction against the real questions
-    and the real rubric, without editing workstream A's trait JSON to do it."""
+    and the real rubric, without editing the trait JSON to do it."""
     items = local_engine.build_eval_conversations(
         trait_data, "evil", persona_instruction="Treat animals as moral patients.")
 

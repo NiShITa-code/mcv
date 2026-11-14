@@ -83,12 +83,12 @@ def _trait_json_problems(cfg: RunConfig, root: Path) -> list[str]:
                 f"disjoint, so set version='{other}' if that is the one you meant."
             )
         elif definition.exists():
-            # The normal state of a freshly landed trait: workstream A's definition is
+            # The normal state of a freshly landed trait: the definition is
             # in, but nothing has expanded it yet. Name the command rather than leaving
             # this as a bare missing file.
             hint = (
                 f" The trait DEFINITION exists at {definition}, but it has not been "
-                f"expanded into question sets yet. Workstream A owns that step: run "
+                f"expanded into question sets yet. Generation owns that step: run "
                 f"`python data_generation/generate_trait.py {cfg.trait}` first."
             )
         else:
@@ -535,7 +535,7 @@ def execute_batch(
     return results
 
 
-# One subcommand per config `kind`, so Kaustubh types `mcv extract configs/x.yaml`,
+# One subcommand per config `kind`, so you type `mcv extract configs/x.yaml`,
 # not `mcv run configs/x.yaml` and has to remember that `kind: extract` inside the
 # file is what actually decides what runs.
 _KIND_COMMANDS = {

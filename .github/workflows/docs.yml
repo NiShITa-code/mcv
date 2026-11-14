@@ -1,0 +1,70 @@
+# This workflow builds the documentation site on every push and pull request. It
+# deploys the site to GitHub Pages from main.
+#
+# BEFORE THE FIRST DEPLOY, do three things. Make the repository public, because
+# GitHub Pages needs that on a free account. Set Settings -> Pages -> Source to
+# "GitHub Actions". Then add a repository variable ENABLE_PAGES with the value
+# "true", under Settings -> Secrets and variables -> Actions -> Variables.
+#
+# The `deploy` job is gated on that variable. Without it the job is skipped, not
+# failed. A deploy job that cannot succeed yet must not report a red X on every
+# push: a workflow that is always failing is a workflow nobody reads.
+#
+# The `build` job runs before you do any of it. It still catches a broken docs build.
+# `mkdocs build --strict` fails on a broken internal link. A doc that points at a
+# missing page or a missing figure cannot merge quietly.
+#
+# `build` also runs on pull requests. A docs site that breaks only after merge is a
+# docs site nobody trusts.
+
+name: docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Run one deploy at a time. Never cancel a deploy in progress. An interrupted Pages
+# deploy can leave the live site on a partial build.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build (strict)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install the docs extra
+        run: pip install -e ".[docs]"
+
+      - name: Build
+        run: mkdocs build --strict
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: deploy to Pages
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.ENABLE_PAGES == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

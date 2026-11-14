@@ -127,7 +127,7 @@ def check_dataset(path: str | Path, *, max_report: int = 3) -> list[str]:
             f"(first at line {tool_calls[0]}). cal_projection projects "
             f"messages[-1]['content'], which is null for these — the projection would be "
             f"computed on nothing. This is normal for tool-call SFT such as the erosion "
-            f"attack data. Decide with workstream B/D how an action should be represented "
+            f"attack data. Decide with the team how an action should be represented "
             f"as text before screening it, then screen a converted copy."
         )
     if empty:

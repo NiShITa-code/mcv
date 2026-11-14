@@ -3,8 +3,8 @@
 Every check here is a failure this project has actually hit, where the run completed,
 wrote a CSV, and produced a number that looked like a result.
 
-The one that cost the most: workstream A ranked three instruction variants v1/v2/v3 on
-their trait means, and the judge had scored 81%, 98% and 60% of the answers. The
+The one that cost the most: three instruction variants v1/v2/v3 were ranked on their
+trait means, and the judge had scored 81%, 98% and 60% of the answers. The
 ranking was partly a ranking of how often the judge replied. Nothing crashed, nothing
 was empty, and the three numbers sat in a table looking comparable.
 

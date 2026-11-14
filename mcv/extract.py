@@ -116,7 +116,7 @@ def _run_local_side(
                                        ("max_tokens", cfg.judge_max_tokens))
                      if v is not None})
     # The trait rubric comes from the trait JSON, never from config: the instrument and
-    # the trait definition are workstream A's, and must not be able to drift apart.
+    # the trait definition live in one file, and must not be able to drift apart.
     trait_scores, trait_errors = asyncio.run(local_judge.judge_batch(
         trait_data["eval_prompt"], questions, answers,
         desc=f"{cfg.trait}/{side} judging trait", **judge_kw))

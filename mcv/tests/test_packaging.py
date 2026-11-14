@@ -26,7 +26,23 @@ import pytest
 
 tomllib = pytest.importorskip("tomllib")
 
-from mcv.tests._paths import PACKAGE, metadata_path, pyproject_path  # noqa: E402
+from mcv.tests._paths import (  # noqa: E402
+    PACKAGE, REPO_ROOT, metadata_path, pyproject_path,
+)
+
+# Extras that install a COMMAND, not a library import.
+#
+#   dev    pytest. mcv/tests/ imports it. The library never does.
+#   docs   mkdocs-material. Nothing imports it. The `mkdocs` command uses it against
+#          mkdocs.yml at the repo root.
+#
+# Both stay outside `all`. `all` is the runtime set for running experiments. Nobody
+# extracting a vector on a pod should have to install a static site generator.
+#
+# Adding a name here is a decision, not a formality. It exempts the extra from the
+# import check below. An extra belongs here only if no mcv code path imports it. If a
+# command needs it at runtime, put it in `all`.
+TOOLING_EXTRAS = {"dev", "docs"}
 
 MCV = PACKAGE
 PYPROJECT = pyproject_path()
@@ -186,13 +202,16 @@ def test_no_extra_declares_something_nothing_imports(pyproject):
     for path in source_files():
         used |= imports_in(path, module_scope_only=False) - UPSTREAM
     used = {normalise(DISTRIBUTION.get(n, n)) for n in used}
-    used |= {"pytest"}  # dev extra, imported by the tests rather than the library
-
     project = pyproject["project"]
     unused = {}
     for name, requirements in project["optional-dependencies"].items():
         if name == "all":
             continue  # checked separately as the union
+        if name in TOOLING_EXTRAS:
+            # Nothing imports a command-line tool. The test below pins each of these
+            # to the config file that drives it. Skipping them here still leaves no
+            # leftover dependency unnoticed.
+            continue
         extra = distribution_names(requirements) - used
         if extra:
             unused[name] = sorted(extra)
@@ -205,13 +224,34 @@ def test_all_is_the_union_of_every_other_extra(pyproject):
     extras = pyproject["project"]["optional-dependencies"]
     union = set()
     for name, requirements in extras.items():
-        if name in ("all", "dev"):
+        if name == "all" or name in TOOLING_EXTRAS:
             continue
         union |= distribution_names(requirements)
 
     assert distribution_names(extras["all"]) == union, (
         f"missing from `all`: {sorted(union - distribution_names(extras['all']))}; "
         f"extra in `all`: {sorted(distribution_names(extras['all']) - union)}")
+
+
+def test_every_tooling_extra_still_has_the_tool_it_feeds(pyproject):
+    """The check above skips TOOLING_EXTRAS. Delete the thing one of them exists for,
+    leave the extra behind, and nothing notices. That is the leftover-of-a-removed-
+    feature case the check exists for. Pin each extra to the config file that uses
+    it."""
+    drives = {
+        "dev": PACKAGE / "tests",
+        "docs": REPO_ROOT / "mkdocs.yml",
+    }
+    declared = set(pyproject["project"]["optional-dependencies"])
+
+    assert TOOLING_EXTRAS <= declared, (
+        f"TOOLING_EXTRAS names {sorted(TOOLING_EXTRAS - declared)}, which pyproject "
+        f"does not declare. Remove it here too.")
+
+    orphans = [name for name in sorted(TOOLING_EXTRAS) if not drives[name].exists()]
+    assert not orphans, (
+        f"these extras install a tool whose config is gone: "
+        f"{ {n: str(drives[n]) for n in orphans} }. Drop the extra, or restore the file.")
 
 
 # ------------------------------------------------------------------- the package ----

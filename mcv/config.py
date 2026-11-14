@@ -64,7 +64,7 @@ __all__ = [
 # (eval_persona.py:14), so importing it crashes immediately on any machine without
 # vLLM installed — Mac included — regardless of which of upstream/hf/vllm you pick.
 # 'local' routes generation through mcv.local_engine instead (HF + mcv.steering,
-# ported from a validated Mac reproduction on the team's kaustubh-replicate branch,
+# ported from a validated Mac reproduction on the team's Mac replication branch,
 # credited in that module). It is never used for the real experiment — upstream/hf/
 # vllm are what runs on the pod, unchanged — this exists so mcv's own correctness can
 # be iterated on without a pod, and to serve as a citable step for the arm's Week 3-4
@@ -405,7 +405,7 @@ class ExtractConfig(RunConfig, LocalEngineOptions):
         description=(
             "Override the coherence judge's rubric. None uses upstream's "
             "Prompts['coherence_0_100']. The TRAIT rubric is not here on purpose: it "
-            "belongs to the trait JSON (workstream A's eval_prompt), so that the "
+            "belongs to the trait JSON (its eval_prompt), so that the "
             "instrument and the trait definition cannot drift apart. engine='local' only."
         ),
     )

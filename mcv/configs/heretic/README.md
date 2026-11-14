@@ -5,7 +5,7 @@ on the pod.
 
 ## Why
 
-Jasmine has asked for Heretic three times (10-15 Slack, 10-16 and 10-23 syncs) and
+A research advisor has asked for Heretic repeatedly, and
 separately asked us to go deeper on layer selection — *"if it holds up under multiple
 selection methods, it looks more legitimate."* This run does both with one GPU hour.
 

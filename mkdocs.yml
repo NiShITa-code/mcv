@@ -1,0 +1,68 @@
+# The documentation site: https://nishita-code.github.io/mcv/
+#
+# docs_dir is mcv/docs. Those are the same files the repo serves on GitHub. They are
+# also the same files mcv/tests/test_docs.py checks. This site holds no second copy of
+# the documentation. A site that restates the docs goes stale against them.
+#
+# index.md is the one exception. It exists only for this site. GitHub's landing page is
+# README.md. test_docs.py checks index.md like every other page.
+#
+#   pip install -e ".[docs]"
+#   mkdocs serve     # http://127.0.0.1:8000
+#   mkdocs build --strict
+
+site_name: mcv
+site_description: Reproducible experiment infrastructure for persona-vector interventions
+site_url: https://nishita-code.github.io/mcv/
+repo_url: https://github.com/NiShITa-code/mcv
+repo_name: NiShITa-code/mcv
+edit_uri: edit/main/mcv/docs/
+
+docs_dir: mcv/docs
+site_dir: site
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+  features:
+    - navigation.top
+    - navigation.tracking
+    - navigation.instant
+    - toc.follow
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+
+nav:
+  - Overview: index.md
+  - Getting started: getting-started.md
+  - How-to: how-to.md
+  - Concepts: concepts.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+plugins:
+  - search

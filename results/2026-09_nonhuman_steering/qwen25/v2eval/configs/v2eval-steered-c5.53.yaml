@@ -19,4 +19,4 @@ steering:
   positions: response
   normalise: false
   expect_model: Qwen/Qwen2.5-7B-Instruct
-notes: HF v2 vector (run ce849e175d7c) on the v2 held-out eval set and v2 rubric (trait_data_eval/..._v2.json from origin/jackie/harness-foundation d77c67e). Coef 5.53 = same layer-20 push as the v1inst_nofs vector at coef 3.
+notes: HF v2 vector (run ce849e175d7c) on the v2 held-out eval set and v2 rubric (trait_data_eval/..._v2.json from commit d77c67e). Coef 5.53 = same layer-20 push as the v1inst_nofs vector at coef 3.

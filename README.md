@@ -1,5 +1,9 @@
 # mcv
 
+[![tests](https://github.com/NiShITa-code/mcv/actions/workflows/tests.yml/badge.svg)](https://github.com/NiShITa-code/mcv/actions/workflows/tests.yml)
+[![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+[![license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
 Reproducible experiment infrastructure for persona-vector interventions.
 
 mcv wraps [`safety-research/persona_vectors`](https://github.com/safety-research/persona_vectors)
@@ -119,7 +123,6 @@ and `--rerun` (a previous attempt left a manifest — archive it and go again).
   — engine, steering position, vector normalisation — is an explicit config field that
   defaults to upstream's own behaviour.
 
-
 ## Tests
 
 ```bash
@@ -127,3 +130,18 @@ python -m pytest mcv/tests/ -q
 ```
 
 Tier-0 tests run on a laptop with neither torch nor a GPU installed.
+
+## License
+
+Apache 2.0. See [LICENSE](LICENSE). mcv wraps
+[`safety-research/persona_vectors`](https://github.com/safety-research/persona_vectors)
+(Chen et al. 2025, [arXiv:2507.21509](https://arxiv.org/abs/2507.21509)). mcv does not
+vendor that code. It carries its own license.
+
+## Contributors
+
+Aaina Garg, Kaustubh Gupta, Nishita Jain, Jacqueline Payne.
+
+Built for the Moral Consideration Vectors arm of the Sentient Futures Project
+Incubator, with Compassion in Machine Learning (CaML). Per-file credits are in
+[NOTICE](NOTICE).

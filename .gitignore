@@ -1,8 +1,41 @@
-# Build artifacts from `pip install -e mcv`. Kept in mcv/ rather than appended to the
-# repo-root .gitignore so the directory stays self-contained -- the same reason
-# pyproject.toml lives here.
+# Python
 build/
 dist/
 *.egg-info/
 __pycache__/
 *.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Credentials. Never commit these.
+.env
+.env.*
+!.env.example
+
+# Run outputs. `destination:` defaults here, so without this rule a contributor's
+# first real run stages several GB of their own artifacts for commit.
+mcv_artifacts/
+ckpt/
+wandb/
+outputs/
+generation_runs/
+*.eval
+
+# Everything under results/ IS tracked on purpose: it is the evidence behind the
+# numbers we report. Add new run outputs there deliberately, not by accident.
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Built documentation site (mkdocs build). The sources are mcv/docs/.
+site/
+
+# Vector output and model checkpoints. Upstream writes vectors to persona_vectors/
+# and mcv's configs point at that path. A checkpoint with embeddings saved is ~7.7GB.
+persona_vectors/
+train_runs/
+pipeline_runs/

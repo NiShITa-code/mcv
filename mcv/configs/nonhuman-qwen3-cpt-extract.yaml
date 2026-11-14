@@ -10,7 +10,7 @@
 # Qwen/Qwen3-8B-Base -- same tokenizer, same special tokens -- so borrowing that
 # model's template is the standard fix. This is an ASSUMPTION about what the
 # checkpoint expects, not something CaML's own config confirms -- worth a "does
-# this look right?" to Jasmine/Nishita before treating results as final.
+# this look right?" with CaML before treating results as final.
 #
 #   mcv validate mcv/configs/nonhuman-qwen3-cpt-extract.yaml
 #   mcv extract  mcv/configs/nonhuman-qwen3-cpt-extract.yaml --smoke
@@ -19,7 +19,7 @@
 kind: extract
 name: nonhuman-qwen3-cpt-extract
 seed: 3407
-destination: /Users/kaustgup/sentient-futures/moral_consideration_vectors/mcv_artifacts
+destination: ./mcv_artifacts
 
 model: CompassioninMachineLearning/Qwen3-8B-Base-CPT-BF16
 trait: nonhuman_animal_moral_consideration

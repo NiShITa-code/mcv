@@ -344,8 +344,8 @@ Every check in it is a failure this project has actually hit, where the run comp
 wrote a CSV, and produced a number that looked like a result. Nothing crashed and
 nothing was empty.
 
-The one that cost the most: workstream A ranked three instruction variants v1/v2/v3 on
-their trait means, and the judge had scored **81%, 98% and 60%** of the answers. The
+The one that cost the most: three instruction variants v1/v2/v3 were ranked on their
+trait means, and the judge had scored **81%, 98% and 60%** of the answers. The
 ranking was partly a ranking of how often the judge replied. Each file on its own looked
 fine — which is why the cross-arm check only exists when you pass more than one.
 
@@ -899,7 +899,7 @@ A template the checkpoint already has is never overwritten.
 
 ## Test a candidate instruction before it goes in the trait file
 
-A trait's instruction pairs live in workstream A's trait JSON, and editing that file to
+A trait's instruction pairs live in the trait JSON, and editing that file to
 try a wording out changes the instrument for everyone. `persona_instruction` applies a
 candidate to the real eval questions and the real rubric without touching it:
 
@@ -913,7 +913,7 @@ Every eval question is wrapped in `You are a helpful assistant. <your text>` —
 framing the extraction's negative side uses — and scored as usual. Compare against the
 same config with the field removed: that is the baseline it has to move.
 
-`mcv/configs/nonhuman-jackie-neg-instruction-check.yaml` is a worked example.
+`mcv/configs/nonhuman-neg-instruction-check.yaml` is a worked example.
 
 Unset, the field changes nothing, so every existing eval config behaves as before.
 `engine: local` only — the other engines hand question-loading to `eval_persona.py` as
@@ -1362,4 +1362,4 @@ rather than silently rebuilding the old vector.
 `cruelty-baseline.yaml` and `cruelty-moral-steered.yaml` serve Qwen2.5-7B-Instruct
 unsteered and steered (layer 20, coef 3, response positions) for CrueltyBench; the header
 of each file has the `inspect eval` command. Both use the notebook vector from
-`kaustubh-replicate`, which has no sidecar, so `validate` warns about provenance.
+the Mac replication branch, which has no sidecar, so `validate` warns about provenance.

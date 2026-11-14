@@ -1,6 +1,6 @@
 """Compare trait vectors.
 
-Answers workstream A's discriminant-validity question: is the
+Answers the discriminant-validity question: is the
 moral-consideration vector actually distinct from a neighbouring trait, or is it
 the same direction wearing a different name?
 

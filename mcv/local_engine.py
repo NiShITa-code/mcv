@@ -11,12 +11,13 @@ still delegating to eval_persona.py — are what run on the pod. `local` exists 
 mcv's own correctness can be iterated on without a pod, and it is what the arm's
 Week 3-4 precondition validation used.
 
-Provenance: generation and trait-loading here are a port of Kaustubh's validated Mac
-reproduction (`local_repro/mac_persona_replication.ipynb` on `kaustubh-replicate`),
-adapted to mcv's config and to route steering through `mcv.steering.apply_steering`
-(gets the model-identity guard and F3 normalisation for free) rather than calling
-`ActivationSteerer` directly. Ported, not re-derived — his version was already
-calibrated against the repo's own baseline output before this existed.
+Provenance: generation and trait-loading here are a port of a team member's validated
+Mac reproduction (`local_repro/mac_persona_replication.ipynb` on the Mac replication
+branch), credited by name in NOTICE. The port adapts it to mcv's config. It routes
+steering through `mcv.steering.apply_steering` instead of calling `ActivationSteerer`
+directly, which gets the model-identity guard and F3 normalisation for free. This code
+is ported, not re-derived: that reproduction was already calibrated against the repo's
+own baseline output before this module existed.
 
 Import-light: torch/transformers are imported lazily, matching every other mcv
 module that touches a model.
@@ -77,9 +78,9 @@ def build_extraction_conversations(
 
     mode="cross_product" matches eval_persona's real behaviour (every question x
     every instruction pair) and is the default for reproduction fidelity.
-    mode="rotate" (one pair per question, rotated across the list) is a deliberate
-    cost-saving deviation — Kaustubh's own choice for his time budget, not ours by
-    default.
+    mode="rotate" (one pair per question, rotated across the list) is a cost-saving
+    deviation, chosen on the replication branch under a tight time budget. It is not
+    mcv's default, and it changes what the extraction set contains.
     """
     questions = trait_data["questions"][:n_questions] if n_questions else trait_data["questions"]
     pairs = trait_data["instruction"]
