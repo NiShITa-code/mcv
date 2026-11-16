@@ -6,7 +6,7 @@ enough to fix something.
 ## Getting set up
 
 ```bash
-pip install -e "mcv[all]" pytest
+pip install -e ".[all]" pytest
 pytest mcv/tests -q
 ```
 
@@ -14,7 +14,7 @@ Node is optional but used: the browser-side arithmetic in `mcv/ui_assets/core.js
 tested against the Python under node. Without it those tests skip, and a divergence
 between the explorer page and `mcv analyse` would ship unnoticed.
 
-Tests also run on a core-only install (`pip install -e mcv`), where everything needing
+Tests also run on a core-only install (`pip install -e .`), where everything needing
 torch or pandas must **skip** rather than error. CI checks both.
 
 ## The rules that are not negotiable

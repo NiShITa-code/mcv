@@ -238,3 +238,46 @@ def test_no_hardcoded_test_count_in_the_docs(all_docs_text):
     assert not counts, (
         f"hardcoded test counts found: {counts}. Point at the pytest command instead."
     )
+
+
+def test_every_documented_pip_install_target_is_installable():
+    """`pip install -e <target>` has to resolve to a directory holding a pyproject.toml,
+    read from the repository root, which is where every one of these docs tells you to
+    stand.
+
+    The docs shipped `pip install -e mcv` for months. That resolves only from the
+    repo's PARENT directory, and only when the clone happens to be named `mcv`. From
+    the root it fails outright:
+
+        ERROR: .../mcv does not appear to be a Python project
+
+    Nothing caught it. CI installs `-e ".[docs]"` and `".[all]"`, so the real workflow
+    was always correct; only the instructions handed to a human were broken, and no
+    test read them. It is the first command in the README, so it is the first thing a
+    new reader runs and the first thing that fails for them.
+
+    Extras are stripped before resolving: `".[all]"` and `"."` are the same target.
+    """
+    docs = [metadata_path(n) for n in ("README.md", "CONTRIBUTING.md")]
+    docs = [d for d in docs if d] + DOCS
+    pattern = re.compile(r"pip install -e\s+[\"']?([^\s\"'`]+)[\"']?")
+
+    bad = []
+    seen = set()
+    for doc in docs:
+        text = read(doc)
+        for raw in pattern.findall(text):
+            target = raw.split("[", 1)[0].rstrip('"').rstrip("'") or "."
+            if target.startswith("-"):      # a flag, not a target
+                continue
+            seen.add(target)
+            resolved = (REPO_ROOT / target).resolve()
+            if not (resolved / "pyproject.toml").is_file():
+                bad.append(f"{doc.name}: `pip install -e {raw}` -> {resolved} has no pyproject.toml")
+
+    assert seen, "no `pip install -e` found in the docs; this test is checking nothing"
+    assert not bad, (
+        "these documented install commands fail from the repository root:\n  "
+        + "\n  ".join(sorted(set(bad)))
+        + "\n\nUse `.` (plus extras) and tell the reader to run from the repo root."
+    )

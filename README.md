@@ -18,10 +18,15 @@ python -m mcv.run sweep    mcv/configs/repro-evil-sweep.yaml     # dose-response
 
 ## Install
 
+Every command below runs from the repository root.
+
 ```bash
-pip install -e mcv              # write and check configs. Pulls pydantic and pyyaml
-pip install -e "mcv[local]"     # extract, evaluate, train, capability, serve, judge
-pip install -e "mcv[all]"       # everything, including TAC and HuggingFace pushes
+git clone https://github.com/NiShITa-code/mcv.git
+cd mcv
+
+pip install -e .                # write and check configs. Pulls pydantic and pyyaml
+pip install -e ".[local]"       # extract, evaluate, train, capability, serve, judge
+pip install -e ".[all]"         # everything, including TAC and HuggingFace pushes
 ```
 
 Installing gives you `mcv <command>` as well as `python -m mcv.run <command>`; the two

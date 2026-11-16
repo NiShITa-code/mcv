@@ -23,7 +23,7 @@ By hand:
 
 ```bash
 pip install -r requirements.txt   # upstream's, for engine='upstream'
-pip install -e "mcv[all]"         # mcv itself
+pip install -e ".[all]"           # mcv itself
 export OPENAI_API_KEY=sk-...      # the judge
 export HF_TOKEN=dummy             # presence-checked only, see below
 pkill -9 -f vllm                  # pods auto-start a server that holds the GPU
@@ -35,15 +35,15 @@ Run everything from the repo root — upstream resolves trait files by relative 
 
 ### On a laptop, you need much less
 
-If you are only writing and checking configs, `pip install -e mcv` is enough — it pulls
+If you are only writing and checking configs, `pip install -e .` is enough — it pulls
 `pydantic` and `pyyaml` and nothing else, and needs no keys:
 
 ```bash
-pip install -e mcv
+pip install -e .
 mcv validate mcv/configs/repro-evil-extract.yaml --skip-credentials
 ```
 
-To actually generate and judge on a laptop, `pip install -e "mcv[local]"` adds torch,
+To actually generate and judge on a laptop, `pip install -e ".[local]"` adds torch,
 transformers, peft and the OpenAI client. `engine='local'` runs the whole path without
 vLLM, without a GPU and — with `judge_base_url` pointed at Ollama — without an OpenAI
 key. The repository README's Install section lists what each extra is for.
